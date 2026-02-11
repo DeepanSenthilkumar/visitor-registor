@@ -1,7 +1,7 @@
 const Visitor = require('../models/Visitor');
 // const Counter = require('../models/counter');
 
-// function for Unique and auto increament of ID
+// function for Unique ID
 const getNextVisitorId = async (date) => {
 //   const counter = await Counter.findByIdAndUpdate(
 //     { _id: 'visitorId' },
@@ -90,7 +90,114 @@ exports.addVisitor = async (req, res) => {
     console.error(error);
     return res.status(500).json({
       isAdded: false,
+      message: 'Internal Server error'
+    });
+  }
+};
+
+// controller to update the out Time based on Id
+exports.updateOutTime = async (req, res) => {
+  try {
+    const { visitorId } = req.params;
+    const { outTime } = req.body;
+
+    if (!outTime) {
+      return res.status(400).json({
+        updated: false,
+        message: 'outTime is required'
+      });
+    }
+
+    const updatedVisitor = await Visitor.findOneAndUpdate(
+      { visitorId: visitorId },
+      { outTime },
+      { new: true }
+    );
+
+    if (!updatedVisitor) {
+      return res.status(404).json({
+        isAdded: false,
+        message: 'Visitor not found'
+      });
+    }
+
+    return res.json({
+      updated: true,
+      message: `outTime updated successfully for ${visitorId}`
+    });
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      updated: false,
+      message: 'Internal Server error'
+    });
+  }
+};
+
+// Controller to get the visitors available based on pagination
+exports.getVisitors = async (req, res) => {
+  try {
+    const {
+      pageNumber = 1,
+      pageSize = 10,
+      searchName = '',
+      date = ''
+    } = req.body;
+
+    const page = Number(pageNumber);
+    const limit = Number(pageSize);
+    const skip = (page - 1) * limit;
+
+    /* Build filter */
+    const filter = {};
+
+    if (searchName) {
+      filter.$or = [
+        { firstName: { $regex: searchName, $options: 'i' } },
+        { lastName: { $regex: searchName, $options: 'i' } }
+      ];
+    }
+
+    if (date) {
+      const startOfDay = new Date(date);
+      startOfDay.setHours(0, 0, 0, 0);
+
+      const endOfDay = new Date(date);
+      endOfDay.setHours(23, 59, 59, 999);
+
+      filter.visitDate = { $gte: startOfDay, $lte: endOfDay };
+    }
+
+    const totalRecords = await Visitor.countDocuments(filter);
+
+    const visitors = await Visitor.find(filter)
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .lean(); // important: allows us to modify objects safely
+
+    /* Add filterCount */
+    const dataWithFilterCount = visitors.map((doc, index) => ({
+      filterCount: skip + index + 1,
+      ...doc
+    }));
+
+    return res.json({
+      pageNumber: page,
+      pageSize: limit,
+      totalRecords,
+      totalPages: Math.ceil(totalRecords / limit),
+      data: dataWithFilterCount
+    });
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
       message: 'Server error'
     });
   }
 };
+
+
+
