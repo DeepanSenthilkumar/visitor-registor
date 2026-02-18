@@ -7,10 +7,16 @@ const app = express();
 
 /* ---- CORS CONFIG ---- */
 app.use(cors({
-  origin: '*',               // change later to frontend domain
-  methods: ['GET', 'POST', 'PUT'],
-  allowedHeaders: ['Content-Type']
+  origin: '*',
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  // credentials: false
 }));
+// app.use(cors({
+//   origin: '*',               // change later to frontend domain
+//   methods: ['GET', 'POST', 'PUT'],
+//   allowedHeaders: ['Content-Type']
+// }));
 
 /* Middleware */
 app.use(express.json());
