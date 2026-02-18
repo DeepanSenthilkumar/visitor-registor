@@ -28,6 +28,7 @@ app.get('/health', (req, res) => {
 });
 
 /* Routes */
+app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/visitors', require('./routes/visitorRoutes'));
 
 /* ---- EXPORT FOR VERCEL ---- */
