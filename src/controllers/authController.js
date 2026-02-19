@@ -6,15 +6,7 @@ const UserSession = require('../models/UserSession');
 exports.login = async (req, res) => {
   try {
     const { userId, password } = req.body;
-    console.log('RAW password from client:', JSON.stringify(password));
-    console.log('Password length:', password.length);
-    const user = await User.findOne({ userId });
 
-    console.log('DB hash:', user.password);
-    console.log('DB hash length:', user.password.length);
-    const match = await bcrypt.compare(password, user.password);
-    console.log('bcrypt compare result:', match);
-    
     if (!userId || !password) {
       return res.status(400).json({
         isAdded: false,
@@ -22,9 +14,18 @@ exports.login = async (req, res) => {
       });
     }
 
-    // const user = await User.findOne({ userId });
-    console.log(user);
-    if (!user || !(await bcrypt.compare(password, user.password))) {
+    const user = await User.findOne({ userId });
+
+    if (!user) {
+      return res.status(401).json({
+        isAdded: false,
+        message: 'Invalid credentials'
+      });
+    }
+
+    const isMatch = await bcrypt.compare(password, user.password);
+
+    if (!isMatch) {
       return res.status(401).json({
         isAdded: false,
         message: 'Invalid credentials'
